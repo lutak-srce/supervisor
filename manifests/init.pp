@@ -1,30 +1,41 @@
+# @summary
+#   Installs supervisord and starts daemon
 #
-# = Class: supervisor
-#
-# This modules installs and manages supervisor
-#
+# @param template
+#   Path to ERB template for main config file
 class supervisor (
-  $file_supervisord_conf     = 'puppet:///modules/supervisor/supervisord.conf',
+  String $template               = 'supervisor/supervisord.conf.erb',
+  Optional[String] $socket_owner = undef,
+  Optional[String] $socket_group = undef,
+  Optional[String] $socket_mode  = undef,
 ) inherits supervisor::params {
 
   package { 'supervisor':
     ensure => installed,
-  }
+  }  
 
   service { 'supervisord':
     ensure  => running,
     enable  => true,
     require => Package['supervisor'],
-  }
+  }  
 
   file { '/etc/supervisord.conf':
     ensure  => file,
     owner   => root,
     group   => root,
     mode    => '0644',
-    source  => $file_supervisord_conf,
+    content => template($template),
     require => Package['supervisor'],
     notify  => Service['supervisord'],
+  }
+
+  file { '/var/run/supervisor':
+    ensure => directory,
+    owner  => $socket_owner,
+    group  => $socket_group,
+    mode   => $socket_mode,
+    notify => Package['supervisor'],
   }
 
 }
